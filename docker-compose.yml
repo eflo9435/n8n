@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  # n8n - Your existing workflow automation
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=${N8N_HOST:-0.0.0.0}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=${N8N_PROTOCOL:-https}
+      - NODE_ENV=production
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE:-America/New_York}
+      - N8N_USER_FOLDER=/home/node/.n8n
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      - DB_TYPE=sqlite
+      - DB_SQLITE_DATABASE=/home/node/.n8n/database.sqlite
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - app-network
+
+  # LiteLLM - AI Proxy Service
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: litellm
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+      - LITELLM_SALT_KEY=${LITELLM_SALT_KEY}
+      - DATABASE_URL=sqlite:///app/data/litellm.db
+      - STORE_MODEL_IN_DB=True
+      - LITELLM_LOG=INFO
+    volumes:
+      - litellm_data:/app/data
+    networks:
+      - app-network
+    command: ["--config", "/app/data/config.yaml", "--port", "4000", "--num_workers", "1"]
+
+  # Open WebUI - Chat Interface
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - OPENAI_API_BASE_URL=http://litellm:4000/v1
+      - OPENAI_API_KEY=${LITELLM_MASTER_KEY}
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
+      - WEBUI_NAME=AI Assistant Hub
+      - DATA_DIR=/app/backend/data
+      - ENABLE_SIGNUP=${ENABLE_SIGNUP:-true}
+      - DEFAULT_USER_ROLE=${DEFAULT_USER_ROLE:-pending}
+      - WEBUI_AUTH=True
+      - WEBUI_LOG_LEVEL=INFO
+    volumes:
+      - open_webui_data:/app/backend/data
+    networks:
+      - app-network
+    depends_on:
+      - litellm
+
+  # Nginx - Reverse Proxy to Route Traffic
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - app-network
+    depends_on:
+      - n8n
+      - litellm
+      - open-webui
+
+volumes:
+  n8n_data:
+    driver: local
+  litellm_data:
+    driver: local
+  open_webui_data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
