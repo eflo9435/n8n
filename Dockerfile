@@ -14,7 +14,8 @@ COPY litellm_data ./litellm_data
 # Expose port 80
 EXPOSE 80
 
-# Start Docker daemon and services directly
-CMD dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.0:2375 & \
-    sleep 15 && \
+# Start Docker daemon and services with proper host configuration
+CMD dockerd --host=unix:///var/run/docker.sock & \
+    sleep 20 && \
+    export DOCKER_HOST=unix:///var/run/docker.sock && \
     docker-compose up --build
