@@ -1,19 +1,21 @@
-FROM node:20-alpine
+FROM python:3.11-slim
 
-# Install required packages
-RUN apk add --no-cache \
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
     nginx \
-    python3 \
-    py3-pip \
     supervisor \
     curl \
-    bash
+    nodejs \
+    npm \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install n8n globally
 RUN npm install -g n8n
 
-# Install LiteLLM
-RUN pip3 install litellm[proxy]
+# Install Python packages
+RUN pip install --no-cache-dir \
+    litellm \
+    open-webui
 
 # Create app directory
 WORKDIR /app
@@ -25,9 +27,6 @@ COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Create directories for data
 RUN mkdir -p /app/data/n8n /app/data/litellm /app/data/openwebui
-
-# Install Open WebUI
-RUN pip3 install open-webui
 
 # Expose port 80
 EXPOSE 80
