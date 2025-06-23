@@ -1,7 +1,7 @@
 FROM docker:24-dind
 
-# Install docker-compose
-RUN apk add --no-cache docker-compose curl
+# Install required packages
+RUN apk add --no-cache docker-compose curl bash
 
 # Create app directory
 WORKDIR /app
@@ -9,16 +9,12 @@ WORKDIR /app
 # Copy configuration files
 COPY docker-compose.yml .
 COPY nginx.conf .
-COPY litellm_data/config.yaml ./litellm_data/config.yaml
+COPY litellm_data ./litellm_data
 
-# Create directories for volumes
-RUN mkdir -p n8n_data litellm_data open_webui_data
-
-# Expose port 80 (nginx proxy)
+# Expose port 80
 EXPOSE 80
 
-# Start script
-COPY start.sh .
-RUN chmod +x start.sh
-
-CMD ["./start.sh"]
+# Start Docker daemon and services directly
+CMD dockerd --host=unix:///var/run/docker.sock --host=tcp://0.0.0.2375 & \
+    sleep 15 && \
+    docker-compose up --build
