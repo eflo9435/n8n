@@ -1,25 +1,35 @@
-FROM node:20-alpine
+FROM node:20-alpine as n8n-base
 
-# Install system dependencies
+# Install n8n and basic dependencies
 RUN apk add --no-cache nginx bash curl
-
-# Install n8n and AI dependencies
 RUN npm install -g n8n
-RUN npm install -g axios express cors
+
+# Create n8n data directory
+RUN mkdir -p /root/.n8n
+
+# Multi-stage build - OpenWebUI in separate container, then copy
+FROM ghcr.io/open-webui/open-webui:main as openwebui
+
+# Final combined image
+FROM n8n-base
+
+# Copy OpenWebUI from official image
+COPY --from=openwebui /app /app/openwebui
+
+# Install Python for OpenWebUI
+RUN apk add --no-cache python3 py3-pip
+RUN pip3 install --break-system-packages uvicorn
 
 # Create working directory
 WORKDIR /app
 
-# Copy files
+# Copy configuration files
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY start.sh /app/start.sh
-COPY ai-proxy.js /app/ai-proxy.js
+COPY litellm-proxy.js /app/litellm-proxy.js
 
 # Make start script executable
 RUN chmod +x /app/start.sh
-
-# Create n8n data directory
-RUN mkdir -p /root/.n8n
 
 EXPOSE 80
 
