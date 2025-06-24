@@ -9,21 +9,29 @@ RUN apt-get update && apt-get install -y \
     curl \
     procps \
     build-essential \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Create Python virtual environment
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Upgrade pip first
-RUN pip install --upgrade pip
+# Upgrade pip and install wheel
+RUN pip install --upgrade pip setuptools wheel
 
 # Install n8n
 RUN npm install -g n8n
 
-# Install Python packages one by one with better error handling
-RUN pip install --no-cache-dir litellm
+# Install LiteLLM with all dependencies
+RUN pip install --no-cache-dir litellm[proxy]
+RUN pip install --no-cache-dir uvicorn fastapi
+
+# Install Open WebUI
 RUN pip install --no-cache-dir open-webui
+
+# Verify installations
+RUN litellm --version || echo "LiteLLM install failed"
+RUN open-webui --version || echo "Open WebUI install succeeded"
 
 # Create directories
 WORKDIR /app
