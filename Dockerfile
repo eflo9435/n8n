@@ -3,15 +3,17 @@ FROM node:20-alpine
 # Install system dependencies
 RUN apk add --no-cache nginx bash curl
 
-# Install n8n
+# Install n8n and AI dependencies
 RUN npm install -g n8n
+RUN npm install -g axios express cors
 
 # Create working directory
 WORKDIR /app
 
-# Copy configuration files
+# Copy files
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY start.sh /app/start.sh
+COPY ai-proxy.js /app/ai-proxy.js
 
 # Make start script executable
 RUN chmod +x /app/start.sh
