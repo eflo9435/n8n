@@ -1,30 +1,29 @@
-FROM python:3.11-slim
+FROM node:20-slim
 
-# Install system dependencies
+# Install Python and other dependencies
 RUN apt-get update && apt-get install -y \
     nginx \
-    nodejs \
-    npm \
-    supervisor \
+    python3 \
+    python3-pip \
     curl \
+    procps \
     && rm -rf /var/lib/apt/lists/*
 
-# Install n8n
+# Install n8n (Node.js 20 compatible)
 RUN npm install -g n8n
 
 # Install Python packages
-RUN pip install --no-cache-dir litellm open-webui
+RUN pip3 install --no-cache-dir litellm open-webui
 
 # Create directories
 WORKDIR /app
 RUN mkdir -p /app/data/n8n /app/data/openwebui
 
-# Copy configuration files
+# Copy configs
 COPY nginx.conf /etc/nginx/nginx.conf
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY start-simple.sh /app/start-simple.sh
+RUN chmod +x /app/start-simple.sh
 
-# Expose port 80
 EXPOSE 80
 
-# Start with supervisor
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+CMD ["/app/start-simple.sh"]
