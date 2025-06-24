@@ -1,19 +1,29 @@
 FROM node:20-slim
 
-# Install Python and other dependencies
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     nginx \
     python3 \
     python3-pip \
+    python3-venv \
     curl \
     procps \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Install n8n (Node.js 20 compatible)
+# Create Python virtual environment
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Upgrade pip first
+RUN pip install --upgrade pip
+
+# Install n8n
 RUN npm install -g n8n
 
-# Install Python packages
-RUN pip3 install --no-cache-dir litellm open-webui
+# Install Python packages one by one with better error handling
+RUN pip install --no-cache-dir litellm
+RUN pip install --no-cache-dir open-webui
 
 # Create directories
 WORKDIR /app

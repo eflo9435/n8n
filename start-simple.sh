@@ -1,8 +1,15 @@
 #!/bin/bash
 set -e
 
+# Activate Python virtual environment
+export PATH="/opt/venv/bin:$PATH"
+
 echo "=== Node.js version check ==="
 node --version
+echo "=== Python version check ==="
+python3 --version
+pip --version
+
 echo "=== Starting services sequentially ==="
 
 # Start nginx
