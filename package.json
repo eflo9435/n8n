@@ -1,9 +1,0 @@
-{
-  "name": "ai-hub",
-  "version": "1.0.0",
-  "dependencies": {
-    "express": "^4.18.0",
-    "axios": "^1.6.0",
-    "cors": "^2.8.5"
-  }
-}

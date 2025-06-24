@@ -1,28 +1,17 @@
-FROM node:20-slim
+FROM n8nio/n8n:latest
 
-# Install minimal dependencies
-RUN apt-get update && apt-get install -y \
-    nginx \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+USER root
 
-# Install n8n and AI packages
-RUN npm install -g n8n
+# Install nginx only
+RUN apk add --no-cache nginx
 
-# Create a simple AI proxy using Node.js
-WORKDIR /app
-COPY package.json .
-RUN npm install
-
-# Copy configs
+# Copy simple nginx config
 COPY nginx.conf /etc/nginx/nginx.conf
-COPY ai-proxy.js /app/ai-proxy.js
-COPY start-simple.sh /app/start-simple.sh
-RUN chmod +x /app/start-simple.sh
 
-# Create data directory
-RUN mkdir -p /app/data/n8n
+# Simple startup script
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
 
 EXPOSE 80
 
-CMD ["/app/start-simple.sh"]
+CMD ["/start.sh"]
