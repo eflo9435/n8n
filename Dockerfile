@@ -1,46 +1,27 @@
 FROM node:20-slim
 
-# Install system dependencies
+# Install minimal dependencies
 RUN apt-get update && apt-get install -y \
     nginx \
-    python3 \
-    python3-pip \
-    python3-venv \
     curl \
-    procps \
-    build-essential \
-    git \
     && rm -rf /var/lib/apt/lists/*
 
-# Create Python virtual environment
-RUN python3 -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
-
-# Upgrade pip and install wheel
-RUN pip install --upgrade pip setuptools wheel
-
-# Install n8n
+# Install n8n and AI packages
 RUN npm install -g n8n
 
-# Install LiteLLM with all dependencies
-RUN pip install --no-cache-dir litellm[proxy]
-RUN pip install --no-cache-dir uvicorn fastapi
-
-# Install Open WebUI
-RUN pip install --no-cache-dir open-webui
-
-# Verify installations
-RUN litellm --version || echo "LiteLLM install failed"
-RUN open-webui --version || echo "Open WebUI install succeeded"
-
-# Create directories
+# Create a simple AI proxy using Node.js
 WORKDIR /app
-RUN mkdir -p /app/data/n8n /app/data/openwebui
+COPY package.json .
+RUN npm install
 
 # Copy configs
 COPY nginx.conf /etc/nginx/nginx.conf
+COPY ai-proxy.js /app/ai-proxy.js
 COPY start-simple.sh /app/start-simple.sh
 RUN chmod +x /app/start-simple.sh
+
+# Create data directory
+RUN mkdir -p /app/data/n8n
 
 EXPOSE 80
 
